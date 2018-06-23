@@ -1,0 +1,6 @@
+name: AutoParkour
+main: com.github.risen619.AutoParkour.Main
+version: 1.0.0
+commands:
+    apstart:
+        usage: /<command>
