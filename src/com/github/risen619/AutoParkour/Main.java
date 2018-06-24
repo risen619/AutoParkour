@@ -10,6 +10,9 @@ public class Main extends JavaPlugin
 	@Override
 	public void onEnable()
 	{
+		ParkourManager.server(getServer());
+		ParkourManager.getInstance();
+		
 		getServer().getPluginManager().registerEvents(new PlayerMoveListener(), this);
 		
 		System.out.println("AutoParkour enabled!");
@@ -25,9 +28,8 @@ public class Main extends JavaPlugin
 	public boolean onCommand(CommandSender s, Command c, String l, String[] args)
 	{
 		if(s instanceof Player)
-		{
-			ParkourManager.getInstance().addLine((Player)s);
-		}
+			ParkourManager.getInstance().addLine((Player)s, false);
+		
 		return true;
 	}
 }

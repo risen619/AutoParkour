@@ -13,10 +13,17 @@ public class PlayerMoveListener implements Listener
 	public void onPlayerMove(PlayerMoveEvent e)
 	{
 		ParkourManager pm = ParkourManager.getInstance();
-		if(!pm.hasLine(e.getPlayer())) return;
+		if(!pm.hasLine(e.getPlayer()))
+		{
+			Location to = e.getTo().clone().subtract(0, 1, 0);
+			Location s = pm.startLocation();
+			
+			if(to.getBlockX() == s.getBlockX() && to.getBlockY() == s.getBlockY() && to.getBlockZ() == s.getBlockZ())
+				pm.addLine(e.getPlayer(), true);
+			return;
+		}
 		ParkourLine pl = pm.getLine(e.getPlayer());
 		Location l = e.getPlayer().getLocation();
-//		e.getPlayer().sendMessage(pl.nextBlock().getLocation().toString() + " : ");
 		
 		if(l.subtract(0, 1, 0).getBlock().equals(pl.nextBlock()))
 			pl.proceed();
