@@ -5,6 +5,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
 
+import com.github.risen619.AutoParkour.Helpers.LocationHelpers;
+
 public class PlayerMoveListener implements Listener
 {
 	public PlayerMoveListener() { }
@@ -25,11 +27,11 @@ public class PlayerMoveListener implements Listener
 		ParkourLine pl = pm.getLine(e.getPlayer());
 		Location l = e.getPlayer().getLocation();
 		
-		if(l.subtract(0, 1, 0).getBlock().equals(pl.nextBlock()))
-			pl.proceed();
-		
-		if(l.getY() < pl.currentBlock().getY() && l.getY() < pl.nextBlock().getY())
+		if(l.getY() < (Integer.min(pl.currentBlock().getY(), pl.nextBlock().getY()) - pl.yOffset()))
 			pm.removeLine(e.getPlayer());
+		
+		if(LocationHelpers.isAbove(l, pl.nextBlock().getLocation()))
+			pl.proceed();
 		
 	}
 }

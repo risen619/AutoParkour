@@ -1,13 +1,29 @@
-position1:
-    x: 0
-    y: 0
-    z: 0
-position2:
-    x: 0
-    y: 0
-    z: 0
-start:
-    world: world
-    x: 0
-    y: 0
-    z: 0
+#Location of starter block
+position:
+    position1:
+        x: 0
+        y: 0
+        z: 0
+    position2:
+        x: 0
+        y: 0
+        z: 0
+    start:
+        world: world
+        x: 0
+        y: 0
+        z: 0
+    respawn:
+        world: world
+        x: 0
+        y: 0
+        z: 0
+
+#Allowed blocks used for parkour
+#Every record is <block_type>[:block_data][;<block_placed_above_previous_one>[:block_data]]
+blocks:
+    platform:
+      - 35
+      - 95
+      - 159
+      - 95:12;171:14

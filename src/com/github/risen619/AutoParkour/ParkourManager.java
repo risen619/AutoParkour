@@ -2,12 +2,15 @@ package com.github.risen619.AutoParkour;
 
 import java.io.File;
 import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.UUID;
 
 import org.bukkit.Location;
 import org.bukkit.Server;
 import org.bukkit.entity.Player;
+
+import com.github.risen619.AutoParkour.Helpers.ConfigHelper;
+import com.github.risen619.AutoParkour.Helpers.LocationHelpers;
 
 
 public class ParkourManager
@@ -16,46 +19,43 @@ public class ParkourManager
 	private static Server server = null;
 	
 	private HashMap<UUID, ParkourLine> lines = null;
+	
 	private Location startLocation = null;
+	private Location respawnLocation = null;
 	private Location position1 = null;
 	private Location position2 = null;
 	
+	private List<BlockChain> allowedChains = null;
+	
 	public Location startLocation() { return startLocation; }
+	public Location respawnLocation() { return respawnLocation; }
 	public Location position1() { return position1; }
 	public Location position2() { return position2; }
+	public List<BlockChain> allowedChains() { return allowedChains; }
 	
 	private ParkourManager()
 	{
 		lines = new HashMap<UUID, ParkourLine>();
-		prepareConfig();
+		loadConfig();
 	}
 	
-	private void prepareConfig()
+	public void loadConfig()
 	{
 		Main plugin = Main.getPlugin(Main.class);
 		File folder = new File(plugin.getDataFolder(), "config.yml");
+		ConfigHelper ch = new ConfigHelper();
 		
 		if(!folder.exists())
 			plugin.saveDefaultConfig();
+		else ch.checkAndFix();
 		
-		Map<String, Object> map = plugin.getConfig().getConfigurationSection("start").getValues(false);
-		String world = (String) map.get("world");
-		int x = (Integer)map.get("x");
-		int y = (Integer)map.get("y");
-		int z = (Integer)map.get("z");
-		startLocation = server().getWorld(world).getBlockAt(x, y, z).getLocation();
+		startLocation = ch.getLocation("position", "start");
+		position1 = ch.getLocation("position", "position1", startLocation.getWorld().getName());
+		position2 = ch.getLocation("position", "position2", startLocation.getWorld().getName());
+		respawnLocation = LocationHelpers.lookAt(ch.getLocation("position", "respawn").add(0.5, 0, 0.5), startLocation);
+		allowedChains = ch.platformList("blocks", "platform");
 		
-		map = plugin.getConfig().getConfigurationSection("position1").getValues(false);
-		x = (Integer)map.get("x");
-		y = (Integer)map.get("y");
-		z = (Integer)map.get("z");
-		position1 = server().getWorld(world).getBlockAt(x, y, z).getLocation();
-		
-		map = plugin.getConfig().getConfigurationSection("position2").getValues(false);
-		x = (Integer)map.get("x");
-		y = (Integer)map.get("y");
-		z = (Integer)map.get("z");
-		position2 = server().getWorld(world).getBlockAt(x, y, z).getLocation();
+		System.out.println(respawnLocation);
 	}
 	
 	public static ParkourManager getInstance()

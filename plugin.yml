@@ -2,6 +2,12 @@ name: AutoParkour
 main: com.github.risen619.AutoParkour.Main
 version: 1.0.0
 commands:
+    apreload:
+        description: Reloads configuration.
+        usage: /<command>
+    aprespawn:
+        description: Sets respawn in your location.
+        usage: /<command>
     apstart:
         description: Starts parkour line.
         usage: /<command>

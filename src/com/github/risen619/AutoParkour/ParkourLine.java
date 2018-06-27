@@ -6,13 +6,14 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
-import org.bukkit.util.Vector;
+
+import com.github.risen619.AutoParkour.Helpers.LocationHelpers;
+import com.github.risen619.AutoParkour.Helpers.MathHelpers;
 
 public class ParkourLine
-{
+{	
 	private Player player;
-	private Material block;
-	private byte blockData;
+	private BlockChain blocks;
 	
 	private Location start;
 	private Location pos1;
@@ -24,13 +25,20 @@ public class ParkourLine
 	public Block currentBlock() { return currentBlock; }
 	public Block nextBlock() { return nextBlock; }
 	
+	public int yOffset() { return blocks.blocks().size(); }
+	
 	public ParkourLine(Player p) { this(p, null, null); }
 	
 	public ParkourLine(Player p, Location pos1, Location pos2)
 	{
+		ParkourManager pm = ParkourManager.getInstance();
+		
 		player = p;
-		block = Material.WOOL;
-		blockData = (byte)((Math.random() * 100) % 16);
+		
+		blocks = pm.allowedChains().get(MathHelpers.randomBetween(0, pm.allowedChains().size()));
+		for(AllowedBlock ab : blocks.blocks())
+			ab.data((ab.allowedAll() || ab.data() == null) ? (byte)MathHelpers.randomBetween(0, 16) : ab.data());
+		
 		currentBlock = p.getLocation().getBlock();
 		
 		if(pos1 == null || pos2 == null)
@@ -44,88 +52,71 @@ public class ParkourLine
 		{
 			this.pos1 = pos1.clone();
 			this.pos2 = pos2.clone();
-			start = p.getLocation().clone().subtract(2, 0, 0);
+			start = pm.respawnLocation().clone();
 		}
 		
-		int rx = randomBetween(pos1.getBlockX(), pos2.getBlockX());
-		int ry = randomBetween(pos1.getBlockY(), pos2.getBlockY());
-		int rz = randomBetween(pos1.getBlockZ(), pos2.getBlockZ());
+		currentBlock = LocationHelpers.randomPoint(pos1, pos2).getBlock();
+		setBlock(currentBlock, blocks, true);
 		
-		currentBlock = p.getWorld().getBlockAt(rx, ry, rz);
-		pos1.getBlock().setType(Material.SEA_LANTERN);
-		pos2.getBlock().setType(Material.SEA_LANTERN);
-
-		setBlock(currentBlock, block, blockData, true);
-		
-		player.teleport(currentBlock.getLocation().add(0, 1, 0));
+		player.teleport(currentBlock.getLocation().add(0.5, 1, 0.5));
 		spawnNext();
-	}
-	
-	public int randomBetween(int a, int b)
-	{
-		if(a == b) return a;
-		if(a > b)
-			return b + ((int)(Math.random() * 1000000) % (a-b));
-		else return a + ((int)(Math.random() * 1000000) % (b-a));
 	}
 	
 	public void clear()
 	{
-		pos1.getBlock().setType(Material.AIR);
-		pos2.getBlock().setType(Material.AIR);
-		currentBlock.setType(Material.AIR);
-		nextBlock.setType(Material.AIR);
+		for(int i=0; i<blocks.blocks().size(); i++)
+		{
+			currentBlock.getLocation().clone().subtract(0, i, 0).getBlock().setType(Material.AIR);
+			nextBlock.getLocation().clone().subtract(0, i, 0).getBlock().setType(Material.AIR);	
+		}
 		player.teleport(start);
-	}
-	
-	private boolean isInArea(Location a, Location b, Location l)
-	{
-		Vector min = Vector.getMinimum(a.toVector(), b.toVector());
-		Vector max = Vector.getMaximum(a.toVector(), b.toVector());
-		Vector o = l.toVector();
-		return (o.getX() >= min.getX() && o.getX() <= max.getX()) &&
-				(o.getY() >= min.getY() && o.getY() <= max.getY()) &&
-				(o.getZ() >= min.getZ() && o.getZ() <= max.getZ());
 	}
 	
 	private void spawnNext()
 	{
-		int rx, ry, rz, i = 0;
+		double rx, ry, rz;
+		int i = 0;
 		Location tmp;
 		do
 		{	
-			ry = randomBetween(-2, 2);
-			int max = ry > 0 ? 4 : (3 - ry);
-			rx = randomBetween(2, max) * (Math.random() > 0.5 ? -1 : 1);
-			rz = randomBetween(2, max) * (Math.random() > 0.5 ? -1 : 1);
+			ry = MathHelpers.randomBetween(-2, 2);
+			double max = ry > 0 ? 4 : (3 - ry);
+			rx = MathHelpers.randomBetween(2, max) * (Math.random() > 0.5 ? -1 : 1);
+			rz = MathHelpers.randomBetween(2, max) * (Math.random() > 0.5 ? -1 : 1);
 			if(rx != 0)
 				rz = Math.random() > 0.75 ? 0 : rz;
 
 			tmp = currentBlock.getLocation().clone().add(rx, ry, rz);
 			i++;
-		} while(!isInArea(pos1, pos2, tmp) && i <= 1000);
+		} while(!LocationHelpers.isInArea(pos1, pos2, tmp) && i <= 100);
 		
 		nextBlock = currentBlock.getLocation().add(rx, ry, rz).getBlock();
-		setBlock(nextBlock, block, blockData, false);
+		setBlock(nextBlock, blocks, false);
 	}
 	
 	public void proceed()
 	{
-		currentBlock.setType(Material.AIR);
+		for(int i=0; i<blocks.blocks().size(); i++)
+			currentBlock.getLocation().clone().subtract(0, i, 0).getBlock().setType(Material.AIR);
+		
 		currentBlock = nextBlock;
 		spawnNext();
 	}
 	
 	@SuppressWarnings("deprecation")
-	private void setBlock(Block b, Material m, byte data, boolean noEffect)
+	private void setBlock(Block b, BlockChain bc, boolean noEffect)
 	{
-		b.setType(m);
-		b.setData(data);
+		for(int i=blocks.blocks().size()-1; i>=0; i--)
+		{
+			b.setType(blocks.blocks().get(i).material());
+			b.setData(blocks.blocks().get(i).data());
+			b = b.getLocation().subtract(0, 1, 0).getBlock();
+		}
 		
 		if(!noEffect)
 		{
 			b.getWorld().playEffect(b.getLocation(), Effect.MOBSPAWNER_FLAMES, 0, 10);
-			b.getWorld().playSound(b.getLocation(), Sound.BLOCK_NOTE_BASS, 1.0f, data / 16.0f);
+			b.getWorld().playSound(b.getLocation(), Sound.BLOCK_DISPENSER_DISPENSE, 25, 1);
 		}
 	}
 	
